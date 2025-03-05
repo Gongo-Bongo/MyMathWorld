@@ -84,7 +84,7 @@
                     if (item.type === 'dir' && item.name !== "favicon_io") {
                         contentHtml += `<li>📁 <a href="#" onclick="loadRepo('${item.path}')">${item.name}</a></li>`;
                     } else {
-                        if (item.name !== "index.html" && item.name !== "README.md" && item.name !== "LICENSE" && item.name !== "CNAME") {
+                        if (item.name !== "index.html" && item.name !== "README.md" && item.name !== "LICENSE" && item.name !== "CNAME" && item.name !== "favicon_io") {
                             const fileUrl = `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
                             contentHtml += `<li>📄 <a href="${fileUrl}" target="_blank">${item.name}</a></li>`;
                         }
