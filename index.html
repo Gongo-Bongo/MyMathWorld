@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Math World</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/favicon_io/site.webmanifest">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: white;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        a {
+            text-decoration: none;
+            color: #0366d6;
+            font-weight: bold;
+        }
+
+        .loading {
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>All Presentations</h2>
+    <!-- <div>
+        <input type="text" id="repoUrl" placeholder="Enter GitHub repo (user/repo)">
+        <button onclick="loadRepo()">Load Repo</button>
+    </div> -->
+    <div id="repoContents" class="loading">Enter a GitHub repository to explore its contents.</div>
+
+    <script>
+        async function loadRepo(path = '') {
+            // const repoInput = document.getElementById('repoUrl');
+            // const repo = repoInput.value.trim();
+            const repo = "Gongo-Bongo/MyMathWorld"
+            if (!repo) {
+                alert('Please enter a GitHub repository (user/repo)');
+                return;
+            }
+
+            const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
+            document.getElementById('repoContents').innerHTML = '<p class="loading">Loading...</p>';
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error('Repository not found');
+                const data = await response.json();
+
+                let contentHtml = '<ul>';
+                if (path) {
+                    contentHtml += `<li><a href="#" onclick="loadRepo('${path.split('/').slice(0, -1).join('/')}')">⬅ Back</a></li>`;
+                }
+
+                data.forEach(item => {
+                    if (item.type === 'dir') {
+                        contentHtml += `<li>📁 <a href="#" onclick="loadRepo('${item.path}')">${item.name}</a></li>`;
+                    } else {
+                        if (item.name != "index.html") {
+
+                            const fileUrl = `https://uploadscreenshots.github.io/All-Presentations/${item.path}`;
+                            contentHtml += `<li>📄 <a href="${fileUrl}" target="_blank">${item.name}</a></li>`;
+                        }
+                    }
+                });
+                contentHtml += '</ul>';
+
+                document.getElementById('repoContents').innerHTML = contentHtml;
+            } catch (error) {
+                document.getElementById('repoContents').innerHTML = '<p style="color:red;">Error loading repository.</p>';
+            }
+        }
+        loadRepo();
+    </script>
+</body>
+
+</html>
