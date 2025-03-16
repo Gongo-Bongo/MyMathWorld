@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -9,97 +9,25 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png">
     <link rel="manifest" href="/favicon_io/site.webmanifest">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-
-        h2 {
-            color: #333;
-        }
-
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        li {
-            background: white;
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        a {
-            text-decoration: none;
-            color: #0366d6;
-            font-weight: bold;
-        }
-
-        .loading {
-            font-size: 18px;
-            font-weight: bold;
-            color: #666;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 </head>
 
 <body>
-    <h2>All My Works</h2>
-    <!-- <div>
-        <input type="text" id="repoUrl" placeholder="Enter GitHub repo (user/repo)">
-        <button onclick="loadRepo()">Load Repo</button>
-    </div> -->
-    <div id="repoContents" class="loading">Enter a GitHub repository to explore its contents.</div>
+    <header>
+        <h2>My Math World</h2>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span class="theme-icon">🌙</span>
+            <span class="theme-text">Dark Mode</span>
+        </button>
+    </header>
 
-    <script>
-        async function loadRepo(path = '') {
-            // const repoInput = document.getElementById('repoUrl');
-            // const repo = repoInput.value.trim();
-            const repo = "Gongo-Bongo/MyMathWorld"
-            if (!repo) {
-                alert('Please enter a GitHub repository (user/repo)');
-                return;
-            }
+    <div id="repoContents" class="loading">Loading repository contents...</div>
 
-            const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
-            document.getElementById('repoContents').innerHTML = '<p class="loading">Loading...</p>';
-
-            try {
-                const response = await fetch(apiUrl);
-                if (!response.ok) throw new Error('Repository not found');
-                const data = await response.json();
-
-                let contentHtml = '<ul>';
-                if (path) {
-                    contentHtml += `<li><a href="#" onclick="loadRepo('${path.split('/').slice(0, -1).join('/')}')">⬅ Back</a></li>`;
-                }
-
-                data.forEach(item => {
-                    if (item.type === 'dir' && item.name !== "favicon_io") {
-                        contentHtml += `<li>📁 <a href="#" onclick="loadRepo('${item.path}')">${item.name}</a></li>`;
-                    } else {
-                        if (item.name !== "index.html" && item.name !== "README.md" && item.name !== "LICENSE" && item.name !== "CNAME" && item.name !== "favicon_io") {
-                            const fileUrl = `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
-                            contentHtml += `<li>📄 <a href="${fileUrl}" target="_blank">${item.name}</a></li>`;
-                        }
-                    }
-                });
-                contentHtml += '</ul>';
-
-                document.getElementById('repoContents').innerHTML = contentHtml;
-            } catch (error) {
-                console.error(error);
-                document.getElementById('repoContents').innerHTML = '<p style="color:red;">Error loading repository.</p>';
-            }
-        }
-        loadRepo();
-    </script>
+    <script src="script.js"></script>
 </body>
 
 </html>
