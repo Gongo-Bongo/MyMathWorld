@@ -1,18 +1,31 @@
-// Theme toggling functionality
-function toggleTheme() {
-    const html = document.documentElement;
+// Theme toggling functionality with persistence
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeButton(savedTheme);
+}
+
+function updateThemeButton(theme) {
     const themeIcon = document.querySelector('.theme-icon');
     const themeText = document.querySelector('.theme-text');
     
-    if (html.getAttribute('data-theme') === 'light') {
-        html.setAttribute('data-theme', 'dark');
+    if (theme === 'dark') {
         themeIcon.textContent = '☀️';
         themeText.textContent = 'Light Mode';
     } else {
-        html.setAttribute('data-theme', 'light');
         themeIcon.textContent = '🌙';
         themeText.textContent = 'Dark Mode';
     }
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeButton(newTheme);
 }
 
 // Function to get file extension
@@ -113,73 +126,72 @@ async function loadRepo(path = '') {
             `;
         }
 
-        for (const item of data) {
-            if (item.name !== "index.html" && 
-                item.name !== "README.md" && 
-                item.name !== "LICENSE" && 
-                item.name !== "CNAME" && 
-                item.name !== "favicon_io") {
-                
-                const fileUrl = item.type === 'dir' 
-                    ? '#' 
-                    : `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
-                
-                const isPDF = item.name.toLowerCase().endsWith('.pdf');
-                const onClick = item.type === 'dir' 
-                    ? `onclick="loadRepo('${item.path}')"` 
-                    : (isPDF ? '' : `onclick="window.open('${fileUrl}', '_blank')"`);
+        // Filter and sort the items
+        const filteredData = data.filter(item => 
+            !["index.html", "README.md", "LICENSE", "CNAME", "favicon_io", "styles.css", "script.js"]
+            .includes(item.name)
+        );
 
-                let previewHtml = '';
-                if (item.type === 'file') {
-                    if (isImage(item.name)) {
-                        previewHtml = `
-                            <div class="card-preview">
-                                <img src="${fileUrl}" alt="${item.name}" loading="lazy">
-                            </div>
-                        `;
-                    } else if (isPDF) {
-                        previewHtml = `
-                            <div class="card-preview">
-                                <div class="pdf-preview-container" id="pdf-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}">
-                                    <div class="preview-placeholder">
-                                        <div class="loading-spinner"></div>
-                                        Loading preview...
-                                    </div>
-                                </div>
-                                <div class="pdf-preview-actions">
-                                    <button class="pdf-action-button" onclick="window.open('${fileUrl}', '_blank')">
-                                        ↗️ Open PDF
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        previewHtml = `
-                            <div class="preview-placeholder">
-                                ${getFileIcon(item.name)}
-                            </div>
-                        `;
-                    }
-                }
+        for (const item of filteredData) {
+            const fileUrl = item.type === 'dir' 
+                ? '#' 
+                : `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
+            
+            const isPDF = item.name.toLowerCase().endsWith('.pdf');
+            const onClick = item.type === 'dir' 
+                ? `onclick="loadRepo('${item.path}')"` 
+                : (isPDF ? '' : `onclick="window.open('${fileUrl}', '_blank')"`);
 
-                contentHtml += `
-                    <div class="card" ${onClick}>
-                        <div class="card-title">
-                            <span class="card-icon">${item.type === 'dir' ? '📁' : getFileIcon(item.name)}</span>
-                            <span>${item.name}</span>
+            let previewHtml = '';
+            if (item.type === 'file') {
+                if (isImage(item.name)) {
+                    previewHtml = `
+                        <div class="card-preview">
+                            <img src="${fileUrl}" alt="${item.name}" loading="lazy">
                         </div>
-                        ${previewHtml}
-                        <span class="file-badge">${item.type === 'dir' ? 'Folder' : getFileExtension(item.name).toUpperCase()}</span>
-                    </div>
-                `;
+                    `;
+                } else if (isPDF) {
+                    previewHtml = `
+                        <div class="card-preview">
+                            <div class="pdf-preview-container" id="pdf-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}">
+                                <div class="preview-placeholder">
+                                    <div class="loading-spinner"></div>
+                                    Loading preview...
+                                </div>
+                            </div>
+                            <div class="pdf-preview-actions">
+                                <button class="pdf-action-button" onclick="window.open('${fileUrl}', '_blank')">
+                                    ↗️ Open PDF
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    previewHtml = `
+                        <div class="preview-placeholder">
+                            ${getFileIcon(item.name)}
+                        </div>
+                    `;
+                }
             }
+
+            contentHtml += `
+                <div class="card" ${onClick}>
+                    <div class="card-title">
+                        <span class="card-icon">${item.type === 'dir' ? '📁' : getFileIcon(item.name)}</span>
+                        <span>${item.name}</span>
+                    </div>
+                    ${previewHtml}
+                    <span class="file-badge">${item.type === 'dir' ? 'Folder' : getFileExtension(item.name).toUpperCase()}</span>
+                </div>
+            `;
         }
         contentHtml += '</div>';
 
         document.getElementById('repoContents').innerHTML = contentHtml;
 
         // Render PDF previews after the content is added to DOM
-        for (const item of data) {
+        for (const item of filteredData) {
             if (item.type === 'file' && item.name.toLowerCase().endsWith('.pdf')) {
                 const containerId = `pdf-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
                 const container = document.getElementById(containerId);
@@ -196,7 +208,8 @@ async function loadRepo(path = '') {
     }
 }
 
-// Initialize the repository contents
+// Initialize theme and repository contents
 document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme();
     loadRepo();
 }); 
