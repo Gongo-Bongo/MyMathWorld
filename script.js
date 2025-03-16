@@ -1,6 +1,79 @@
-// Theme toggling functionality with persistence
+// Configuration object
+const config = {
+    repository: {
+        owner: "Gongo-Bongo",
+        name: "MyMathWorld",
+        branch: "main",
+        excludedFiles: [
+            "index.html",
+            "README.md",
+            "LICENSE",
+            "CNAME",
+            "favicon_io",
+            "styles.css",
+            "script.js"
+        ]
+    },
+    theme: {
+        default: 'light',
+        storageKey: 'theme'
+    }
+};
+
+// Repository settings form
+function showRepoSettings() {
+    const currentContent = document.getElementById('repoContents').innerHTML;
+    document.getElementById('repoContents').innerHTML = `
+        <div class="settings-container">
+            <h3>Repository Settings</h3>
+            <form id="repoSettingsForm" class="settings-form">
+                <div class="form-group">
+                    <label for="repoOwner">Repository Owner:</label>
+                    <input type="text" id="repoOwner" value="${config.repository.owner}" placeholder="e.g., username" required>
+                </div>
+                <div class="form-group">
+                    <label for="repoName">Repository Name:</label>
+                    <input type="text" id="repoName" value="${config.repository.name}" placeholder="e.g., my-repo" required>
+                </div>
+                <div class="form-group">
+                    <label for="repoBranch">Branch:</label>
+                    <input type="text" id="repoBranch" value="${config.repository.branch}" placeholder="e.g., main">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="settings-button">Save & Load</button>
+                    <button type="button" class="settings-button cancel" onclick="loadRepo()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    document.getElementById('repoSettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateRepoSettings();
+    });
+}
+
+function updateRepoSettings() {
+    const owner = document.getElementById('repoOwner').value.trim();
+    const name = document.getElementById('repoName').value.trim();
+    const branch = document.getElementById('repoBranch').value.trim();
+
+    if (owner && name) {
+        config.repository.owner = owner;
+        config.repository.name = name;
+        config.repository.branch = branch || 'main';
+        
+        // Save settings to localStorage
+        localStorage.setItem('repoConfig', JSON.stringify(config.repository));
+        
+        // Reload repository contents
+        loadRepo();
+    }
+}
+
+// Theme functions
 function initializeTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
+    const savedTheme = localStorage.getItem(config.theme.storageKey) || config.theme.default;
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeButton(savedTheme);
 }
@@ -24,7 +97,7 @@ function toggleTheme() {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     
     html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+    localStorage.setItem(config.theme.storageKey, newTheme);
     updateThemeButton(newTheme);
 }
 
@@ -97,21 +170,26 @@ async function renderPDFPreview(url, container) {
 }
 
 async function loadRepo(path = '') {
-    const repo = "Gongo-Bongo/MyMathWorld"
-    if (!repo) {
-        alert('Please enter a GitHub repository (user/repo)');
-        return;
-    }
+    const { owner, name, excludedFiles } = config.repository;
+    const baseUrl = `https://${owner}.github.io/${name}`;
+    const apiUrl = `https://api.github.com/repos/${owner}/${name}/contents/${path}`;
 
-    const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
-    document.getElementById('repoContents').innerHTML = '<p class="loading">Loading...</p>';
+    document.getElementById('repoContents').innerHTML = '<p class="loading">Loading repository contents...</p>';
 
     try {
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error('Repository not found');
         const data = await response.json();
 
-        let contentHtml = '<div class="content-grid">';
+        let contentHtml = `
+            <div class="repo-header">
+                <h3>${owner}/${name}</h3>
+                <button onclick="showRepoSettings()" class="settings-button">
+                    ⚙️ Change Repository
+                </button>
+            </div>
+            <div class="content-grid">
+        `;
         
         if (path) {
             const parentPath = path.split('/').slice(0, -1).join('/');
@@ -127,15 +205,10 @@ async function loadRepo(path = '') {
         }
 
         // Filter and sort the items
-        const filteredData = data.filter(item => 
-            !["index.html", "README.md", "LICENSE", "CNAME", "favicon_io", "styles.css", "script.js"]
-            .includes(item.name)
-        );
+        const filteredData = data.filter(item => !excludedFiles.includes(item.name));
 
         for (const item of filteredData) {
-            const fileUrl = item.type === 'dir' 
-                ? '#' 
-                : `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
+            const fileUrl = item.type === 'dir' ? '#' : `${baseUrl}/${item.path}`;
             
             const isPDF = item.name.toLowerCase().endsWith('.pdf');
             const onClick = item.type === 'dir' 
@@ -196,20 +269,41 @@ async function loadRepo(path = '') {
                 const containerId = `pdf-${item.name.replace(/[^a-zA-Z0-9]/g, '-')}`;
                 const container = document.getElementById(containerId);
                 if (container) {
-                    const fileUrl = `https://gongo-bongo.github.io/MyMathWorld/${item.path}`;
+                    const fileUrl = `${baseUrl}/${item.path}`;
                     renderPDFPreview(fileUrl, container);
                 }
             }
         }
     } catch (error) {
         console.error(error);
-        document.getElementById('repoContents').innerHTML = 
-            '<p style="color:var(--text-secondary);text-align:center;padding:20px;">Error loading repository.</p>';
+        document.getElementById('repoContents').innerHTML = `
+            <div class="error-container">
+                <p>Error loading repository. Please check if:</p>
+                <ul>
+                    <li>The repository exists and is public</li>
+                    <li>GitHub Pages is enabled for this repository</li>
+                    <li>The repository owner and name are correct</li>
+                </ul>
+                <button onclick="showRepoSettings()" class="settings-button">
+                    ⚙️ Check Repository Settings
+                </button>
+            </div>
+        `;
     }
 }
 
-// Initialize theme and repository contents
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize application
+function initializeApp() {
+    // Load saved repository settings if they exist
+    const savedConfig = localStorage.getItem('repoConfig');
+    if (savedConfig) {
+        const parsedConfig = JSON.parse(savedConfig);
+        Object.assign(config.repository, parsedConfig);
+    }
+
     initializeTheme();
     loadRepo();
-}); 
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeApp); 
